@@ -1,0 +1,20 @@
+area_name,area_short,area_code
+Arctic Sea,Arc_Sea,18
+"Atlantic, Northwest",Atl_NW,21
+"Atlantic, Northeast",Atl_NE,27
+"Atlantic, Western Central",Atl_WC,31
+"Atlantic, Eastern Central",Atl_EC,34
+Mediterranean and Black Sea,Med_BS,37
+"Atlantic, Southwest",Atl_SW,41
+"Atlantic, Southeast",Atl_SE,47
+"Atlantic, Antarctic",Atl_Ant,48
+"Indian Ocean, Western",Ind_West,51
+"Indian Ocean, Eastern",Ind_East,57
+"Indian Ocean, Antarctic",Ind_Ant,58
+"Pacific, Northwest",Pac_NW,61
+"Pacific, Northeast",Pac_NE,67
+"Pacific, Western Central",Pac_WC,71
+"Pacific, Eastern Central",Pac_EC,77
+"Pacific, Southwest",Pac_SW,81
+"Pacific, Southeast",Pac_SE,87
+"Pacific, Antarctic",Pac_Ant,88
