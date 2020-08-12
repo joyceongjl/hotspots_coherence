@@ -1,4 +1,4 @@
-#open packages that are available for download on Cran
+###open packages that are available for download on Cran
 library(corrplot)
 library(dplyr)
 library(ggplot2)
@@ -9,8 +9,9 @@ library(rgdal)
 library(reshape2)
 library(RColorBrewer)
 library(fields) # colorbar.plot()
+library(MuMIn)
 
-#preparation of data from FAO for analyses
+###preparation of data from FAO for analyses
 fao<-read.csv(file="~/TS_FI_CAPTURE.csv")
 #subset fishing area so it goes from 18-88 (the FAO regions)
 fao2<-subset(fao, Fishing_Area>=18 & Fishing_Area<=88, select=Fishing_Area:Quantity)
@@ -113,7 +114,7 @@ t5<-t3m2.cd$cleandat
 head(t5)
 
 
-#full dataset for 1092 species from 1955-2014
+##full dataset for 1092 species from 1955-2014
 library(reshape2)
 df.t5<-melt(t3m2, varnames=c("loc_sp", "year"), value.name="tonnes")
 head(df.t5)
@@ -131,7 +132,7 @@ t5de4<-df.t5.full %>% group_by(Fishing_Area) %>%
 summary(df.t5.full$tonnes)
 which(df.t5.full$tonnes==0)#1619 out of 65520 (2.5% zeros)
 
-######full dataset for transformed data of 1092 species from 1955-2014
+##full dataset for transformed data of 1092 species from 1955-2014
 df.t5cd<-melt(t5, varnames=c("loc_sp", "year"), value.name="clndat")
 head(df.t5cd)
 str(df.t5cd)
@@ -139,15 +140,14 @@ head(fsk4)
 df.t5cd.full<-df.t5cd %>% left_join(fsk4, by="loc_sp")
 str(df.t5cd.full)
 
-####to get ordered (by family, then genera, then species) 1092 time series that have been box cox transformed:
+##to get ordered (by family, then genera, then species) 1092 time series that have been box cox transformed:
 load(file="~/t5ord.RData")
 str(t5.ord)
-#for full dataframe of 1092 species groups with loc_sp, year, clndat, fao region, scientific name and family group:
+##full dataframe of 1092 species groups with loc_sp, year, clndat, fao region, scientific name and family group:
 fao.sp<-read.csv(file="~/t5clndat_full_1955_2014_name_change.csv")
 str(fao.sp)
 
-#Code below was run using parallelization with a small computer cluster, using the function synmat in the old Reumannplatz package
-#annotate code for redo of coh for fao 1092 species
+###Code below was run using parallelization with a small computer cluster, using the function synmat in the old Reumannplatz package
 library(Reumannplatz)
 library(foreach)
 library(parallel)
@@ -191,7 +191,7 @@ fcohvalmat<-as.matrix(fcohval)
 str(fcohvalmat)
 
 
-#code to get df for 1092 species
+###code to get df for 1092 species
 str(fcohpvmat1)
 str(fcohvalmat)
 fcohvalmat1092<-fcohvalmat[1:1092,1:1092]
@@ -228,12 +228,12 @@ str(fcohdf1)
 fcohdf1$oceans2<-factor(fcohdf1$ocean, levels=c("Atl", "Ind", "Med", "Pac", "others"))
 levels(fcohdf1$oceans2)#data check
 
-####for df of fao coherence with fdr<20%
+##df of fao coherence with fdr<20%
 fcohq2sub2<-read.csv(file="~/fcohq2sub2_ranked_20181106.csv")
 str(fcohq2sub2)
 fcohq2sub2<-fcohq2sub2[,-1]
 
-#for df of all fao coherence, over all pvalues
+##df of all fao coherence, over all pvalues
 fcohdf1<-read.csv(file="~/fcohdf1_20190521.csv")
 str(fcohdf1)
 fcohdf1<-fcohdf1[,-1]
@@ -241,7 +241,7 @@ fcohdf1$qval<-p.adjust(fcohdf1$pval, method="fdr")
 fcohdf1sub<-fcohdf1[,c(1:3,7,14:15)]#basically want row, col, regionop, oceancon2, qval for family randomizations
 str(fcohdf1sub)
 
-#Code for randomizations within ocean basins
+###Code for randomizations within ocean basins
 randlist<-list()
 for (j in 1:1000){
   randlist[[j]]<-transform(fcohdf1sub, oceancon2=sample(oceancon2))
@@ -282,7 +282,8 @@ length(which(randout$btwcoh>0.6560049))#r=982, est pval = 0.982 for btw ocean
 length(which(oceanrandout$btwocpt<0.5440303))#r = 1, est pval = 0.002
 length(which(oceanrandout$btwcoh<0.6560049))#r=18, est pval = 0.019
 
-#Code to get mean phases for the significantly coherent pairs within FAO regions
+
+###Code to get mean phases for the significantly coherent pairs within FAO regions
 #uses new package wsyn
 regionames<-c("21","27","31","34","37","41","47","51","57","61","67","71","77","81","87","others")
 regionames1<-as.numeric(regionames[1:15])
@@ -295,7 +296,7 @@ for (i in 1:15){
 }
 str(cohsp[[1]])#still data frame
 nrow(cohsp[[1]])#25 rows
-#25+63+24+18+31+15+3+11+65+42+1+54+5+20+4 = 381 within fao region significant relationships
+#381 within fao region significant relationships
 
 winls<-vector(mode="list",15)
 for (i in 1:15){
@@ -352,3 +353,167 @@ penspshn<-alldfph0pe2[,5:8]
 alldf3ph$area_short<-as.factor(alldf3ph$fao)
 alldf3phpe3<- alldf3ph %>% left_join(penspshn, by="area_short")
 str(alldf3phpe3)
+
+
+### Multiple linear regression models
+alltsphpe<-read.csv("~/alltsphpe_20190411.csv")
+alltsphpe<-alltsphpe[,-1]
+options(na.action="na.fail")
+PEallts<-lm(pe ~ ptph0 + nsp + ptphlag + ptphanti, data=alltsphpe)
+dd.PEallts<-dredge(PEallts, rank="AICc", extra="adjR^2", m.lim=c(0,1))# subset= !(wtphlag & wtph0) && !(wtphlag & wtphanti) && !(wtph0 & wtphanti))#exclude all weighted phases together in same model because correlated
+#importance(dd.PEts2)#in-phase impt 0.25, anti impt 0.34, lag 0.16, nsp 0.13.
+
+
+### Autocorrelation of empirical data
+str(t5.ord)
+tac<-matrix(data=NA, nrow=1092, ncol=1)
+tac<-apply(t5.ord, 1, autocorrelation)
+str(tac)
+autocorrelation(t5.ord[2,])#to check
+median(tac)#mean=0.71, median = 0.74, min=-0.158, max=1.12, middle of range is 0.639.
+summary(tac)
+tacdf<-as.data.frame(tac)
+colnames(tacdf)<-"tac"
+tac1<-ggplot(data=tacdf, aes(tacdf$tac))
+tac1 + geom_histogram(binwidth=0.05) + theme_classic() +
+  labs(title="Temporal autocorrelation of 1092 timeseries", x="Autocorrelation", y="Count") +
+  scale_y_continuous(expand=c(0,0), limits=c(0,150))
+
+
+### Null models for red noise timeseries with appropriate acf
+red07tslist<-list()
+for (j in 1:100){
+  red07tslist[[j]]<-matrix(NA, nrow=1092, ncol=60)
+  red07tslist[[j]]<-t(apply(red07tslist[[j]], MARGIN=1, FUN=function(x) colored_noise(timesteps=60,mean=0,sd=1,phi=0.7)))
+  red07tslist[[j]]<-CleanData(red07tslist[[j]], normalize=T, each.ts=T, detrend=T, rescale=T)
+  red07tslist[[j]]<-red07tslist[[j]]$cleandat
+}#this should have generated a list of 100 random rednoise ts, each 1092 rows and 60 columns.
+str(red07tslist[[1]])
+
+##Code below was run using parallelization with a small computer cluster
+library(Reumannplatz)
+load(file="~/red07tslist.RData")
+str(red07tslist[[1]])#check, should be num[1:1092,1:60] xxx
+redcohval<-list()
+for (i in 1:100){
+  redcohval[[i]]<-synmat(red07tslist[[i]], times=1955:2014, method="coh", scale.min=2, scale.max.input=20, sigma=1.05, f0=1)
+}
+save(redcohval, file="~/redcohval.RData")
+
+#to get p values using 1000 surrogates for part 1/part 2
+library(Reumannplatz)
+library(foreach)
+library(parallel)
+library(doParallel)
+load(file="~/red07tslist.RData")
+str(red07tslist[[1]])#check, should be num[1:1092,1:60] xxx
+#source(file="/local/home/joyceo/modified synmat code/synmat14_cohcode_7r.R")
+source(file="/local/home/joyceo/modified synmat code/synmat14_cohcode_3r.R")
+cl<-makeCluster(20)
+registerDoParallel(cl)
+#istpt<-seq(2, 771, 7)#110 iterations, p1 of full 1092 dataset
+istpt<-seq(772, 1092, 3)#107 iterations, p2 of full 1092 dataset
+red07p2<-list()
+for (h in 1:100){
+  red07p2[[h]]<- foreach(k=1:107, .packages="Reumannplatz", .combine="rbind") %dopar% 
+    synmat14(red07tslist[[h]], istart=istpt[k], times=1955:2014, nsurrogs=1000, scale.min=2, scale.max.input=20, sigma=1.05, f0=1)
+}
+stopCluster(cl)
+save(red07p2, file="/local/home/joyceo/nulltesting/red07p2.RData")
+
+#check of list of 100 times of random red noise
+load(file="~/red07p1.RData")
+str(red07p1[[2]])#check, should be num[1:770,1:1092]
+load(file="~/red07p2.RData")
+str(red07p2[[1]])#check, should be num[1:321,1:1092]
+
+redpv<-list()
+for (i in 1:100){
+  redpv[[i]]<-rbind(red07p1[[i]], red07p2[[i]])
+}
+str(redpv[[1]])#that seemed to have worked.
+length(redpv[[1]][lower.tri(redpv[[1]], diag=TRUE)])#595686 obs.
+
+nullredqval<-matrix(data=NA, nrow=100, ncol=1)
+for (i in 1:100){
+  redpv[[i]][lower.tri(redpv[[1]], diag=TRUE)]<-p.adjust(redpv[[i]][lower.tri(redpv[[1]], diag=TRUE)], method="fdr")
+  nullredqval[i,1]<-length(which(redpv[[i]]<0.2))
+}
+
+min(nullredqval)#min=530, max=644, mean=594.61~595 for acf0.5. For acf 0.7, mean=633.5, min=576, max=694.
+nullredqvdf<-as.data.frame(nullredqval)
+colnames(nullredqvdf)<-"nfdr20"
+#estimated p value = 0+1/100+1 = 0.0099, or 0.010 based on 100 simulations
+
+
+### Random red noise null models with acf drawn from distribution of acf values from empirical data
+str(tac)
+#make sure dplyr is not loaded cos of sample function
+
+#generate list of 100 matrices of red noise ts with acf drawn from real 1092 ts, took almost 2 hours
+redracflist<-list()
+for (j in 1:100){
+  redracflist[[j]]<-matrix(NA, nrow=1092, ncol=60)
+  redracflist[[j]]<-t(apply(redracflist[[j]], MARGIN=1, FUN=function(x) colored_noise(timesteps=60,mean=0,sd=1,phi=sample(tac[tac<1],1))))
+  redracflist[[j]]<-cleandat(redracflist[[j]], times=1955:2014, clev=5)#using new wsyn pkg
+  redracflist[[j]]<-redracflist[[j]]$cdat
+}#this should have generated a list of 100 random rednoise ts, each 1092 rows and 60 columns.
+str(redracflist[[1]])
+
+#Coherence values
+redracfcohval<-list()
+for (i in 1:100){
+  redracfcohval[[i]]<-synmat(redracflist[[i]], times=1955:2014, method="coh", 
+                             scale.min=2, scale.max.input=20)
+}
+
+#Code below was run using parallelization with a small computer cluster
+#to get p values using 1000 surrogates for part 1/part 2
+library(Reumannplatz)
+library(foreach)
+library(parallel)
+library(doParallel)
+load(file="~/redracflist.RData")
+str(redracflist[[1]])#check, should be num[1:1092,1:60] xxx
+source(file="~/synmat14_cohcode_7r.R")
+#source(file="~/synmat14_cohcode_3r.R")
+cl<-makeCluster(30)
+registerDoParallel(cl)
+istpt<-seq(2, 771, 7)#110 iterations, p1 of full 1092 dataset
+#istpt<-seq(772, 1092, 3)#107 iterations, p2 of full 1092 dataset
+redracfp1<-list()
+for (h in 1:100){
+  redracfp1[[h]]<- foreach(k=1:110, .packages="Reumannplatz", .combine="rbind") %dopar% 
+    synmat14(redracflist[[h]], istart=istpt[k], times=1955:2014, nsurrogs=1000, scale.min=2, scale.max.input=20, sigma=1.05, f0=1)
+}
+stopCluster(cl)
+save(redracfp1, file="~/redracfp1.RData")
+
+####
+#check of list of 100 times of random red noise with randomly assigned acf values
+load(file="~/redracfp1.RData")
+str(redracfp1[[2]])#check, should be num[1:770,1:1092]
+load(file="~/redracfp2.RData")
+str(redracfp2[[1]])#check, should be num[1:321,1:1092]
+
+redracfpv<-list()
+for (i in 1:100){
+  redracfpv[[i]]<-rbind(redracfp1[[i]], redracfp2[[i]])
+}
+str(redracfpv[[1]])#check
+length(redracfpv[[1]][lower.tri(redracfpv[[1]], diag=TRUE)])#check that it is 595686 obs.
+
+redracfqval<-matrix(data=NA, nrow=100, ncol=1)
+for (i in 1:100){
+  redracfpv[[i]][lower.tri(redracfpv[[1]], diag=TRUE)]<-p.adjust(redracfpv[[i]][lower.tri(redracfpv[[1]], diag=TRUE)], method="fdr")
+  redracfqval[i,1]<-length(which(redracfpv[[i]]<0.2))
+}
+summary(redracfqval)#min=627, max=799, median=710.5, mean=712.7
+redracfqvdf<-as.data.frame(redracfqval)
+colnames(redracfqvdf)<-"nfdr20"
+#estimated p value = 0+1/100+1 = 0.0099, or 0.010 based on 100 simulations
+
+
+### Data for dominant Family and Order
+read.csv("~/fao_dominantfamily_20200609.csv")
+read.csv("~/fao_dominantorder_20200609.csv")
